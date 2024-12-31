@@ -27,6 +27,7 @@ type ButtonProps = ComponentProps<typeof Button> & {
 export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
   (props, ref) => {
     const router = useRouter();
+
     const [loading, setLoading] = useState(false);
     const {
       embed = true,
@@ -38,11 +39,12 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
     } = props;
 
     const isCurrent = currentPlan && plan.id === currentPlan.id;
+    const isFreeVariant =
+      plan.variantId === VARIANT_ID.free.monthly ||
+      plan.variantId === VARIANT_ID.free.yearly;
 
     const label =
-      currentPlanName === "free" &&
-      (plan.variantId === VARIANT_ID.free.monthly ||
-        plan.variantId === VARIANT_ID.free.yearly)
+      currentPlanName === "free" && isFreeVariant
         ? "Your current plan"
         : isCurrent
         ? "Your current plan"

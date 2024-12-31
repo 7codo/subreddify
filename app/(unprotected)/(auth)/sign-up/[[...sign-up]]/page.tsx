@@ -10,7 +10,7 @@ export const metadata = createMetadata({
 export default function Page() {
   return (
     <section className="flex h-[calc(100vh_-_3.5rem)] w-full items-center justify-center">
-      <SignUp />
+      <SignUp forceRedirectUrl="/chat" />
     </section>
   );
 }

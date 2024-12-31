@@ -175,10 +175,14 @@ export function SidebarUserNav({ currentPlan }: Props) {
                 variant="ghost"
                 className="text-left w-full"
                 onClick={async () => {
-                  await signOut(() => {
-                    push("/");
-                  });
-                  if (pathname !== "/") push("/");
+                  await signOut(
+                    () => {
+                      refresh();
+                    },
+                    {
+                      redirectUrl: "/",
+                    }
+                  );
                 }}
               >
                 <LogOut />
