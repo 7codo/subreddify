@@ -75,7 +75,7 @@ export function Chat({
     },
     onError: (error: Error) => {
       if (error.message === "Resource not found") {
-        toast.error("Please adjust the chat settings before sending messages!");
+        toast.error("Please add some resources to get started!");
         setShowSettingsPanel(true);
       }
       if (error.message === "LIMIT_REACHED") {

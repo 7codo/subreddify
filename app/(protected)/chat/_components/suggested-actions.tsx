@@ -7,31 +7,28 @@ import { memo } from "react";
 
 const suggestedActions = [
   {
-    title: "Summarize Reddit Posts",
-    label: "What are the main points of this post?",
-    action:
-      "Summarize the key takeaways from the selected Reddit post and its comments.",
+    title: "What are your biggest challenges?",
+    label: "Understand their pain points to identify how you can help.",
+    action: "What are your biggest challenges?",
   },
 
   {
-    title: "Identify Common Themes",
-    label: "What are people frequently mentioning?",
-    action:
-      "Analyze the comments on the selected Reddit post to find recurring themes or opinions.",
+    title: "What motivates your decisions?",
+    label: "Learn what drives their choices to align your offerings.",
+    action: "What motivates your decisions?",
   },
 
   {
-    title: "Generate Follow-Up Questions",
-    label: "What should I ask next?",
-    action:
-      "Based on this Reddit post, suggest insightful questions I can ask to learn more about the topic.",
+    title: "How do you prefer to engage with businesses?",
+    label: "Discover their preferred communication and interaction methods.",
+    action: "How do you prefer to engage with businesses?",
   },
 
   {
-    title: "Provide Context or Background",
-    label: "Explain the topic of this post.",
-    action:
-      "Explain the context or background information related to the selected Reddit post for better understanding.",
+    title: "What do you value most in a solution?",
+    label:
+      "Understand the key factors they prioritize (e.g., cost, speed, quality).",
+    action: "What do you value most in a solution?",
   },
 ];
 

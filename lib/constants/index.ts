@@ -35,16 +35,16 @@ export const VARIANT_ID = {
     yearly: 7,
   },
   starter: {
-    monthly: process.env.NODE_ENV === "production" ? 628042 : 563669,
-    yearly: process.env.NODE_ENV === "production" ? 628043 : 563675,
+    monthly: /*process.env.NODE_ENV === "production" ? 628042 :*/ 563669,
+    yearly: /*process.env.NODE_ENV === "production" ? 628043 :*/ 563675,
   },
   growth: {
-    monthly: process.env.NODE_ENV === "production" ? 628040 : 609557,
-    yearly: process.env.NODE_ENV === "production" ? 628041 : 609566,
+    monthly: /*process.env.NODE_ENV === "production" ? 628040 :*/ 609557,
+    yearly: /*process.env.NODE_ENV === "production" ? 628041 :*/ 609566,
   },
   enterprise: {
-    monthly: process.env.NODE_ENV === "production" ? 628220 : 628044,
-    yearly: process.env.NODE_ENV === "production" ? 628222 : 628045,
+    monthly: /*process.env.NODE_ENV === "production" ? 628220 :*/ 628044,
+    yearly: /*process.env.NODE_ENV === "production" ? 628222 :*/ 628045,
   },
 };
 

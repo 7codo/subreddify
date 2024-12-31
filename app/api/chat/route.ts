@@ -90,10 +90,6 @@ export async function POST(request: Request) {
     });
   }
 
-  if (postsList.length === 0 && posts.length === 0) {
-    return new Response("Resource not found", { status: 404 });
-  }
-
   const model = models.find((model) => model.id === modelId);
 
   if (!model) {
@@ -121,6 +117,10 @@ export async function POST(request: Request) {
       commentsData: comments,
       chatId: id,
     });
+  } else {
+    if (postsList.length === 0) {
+      return new Response("Resource not found", { status: 404 });
+    }
   }
 
   const userMessageId = generateUUID();
