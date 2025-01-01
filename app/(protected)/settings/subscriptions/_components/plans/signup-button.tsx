@@ -72,7 +72,8 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
       return `Get ${plan.productName}`;
     };
 
-    async function handSignUp() {
+    async function handleSignUp() {
+      // renamed from handSignUp
       setLoading(true);
       try {
         if (isChangingPlans) {
@@ -84,6 +85,7 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
             toast.warning(
               "Go to Subscriptions and cancel your current plan to return to the free plan."
             );
+            setLoading(false); // Add this to reset loading state
             return;
           }
           if (!plan.id) {
@@ -128,6 +130,7 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
             toast.success("Successfully switched plans", {
               description: `In the future, you will be charged ${plan.price}.`,
             });
+            setLoading(false); // Add this to reset loading state
             return;
           }
           if (isSwitchedSubscriptionValid && switchedSubscription) {
@@ -227,17 +230,7 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
           (currentPlanName === "free" && isFreeVariant)
         }
         variant={loading || isCurrent ? "outline" : "landing"}
-        onClick={async () => {
-          try {
-            await handSignUp();
-          } catch (error) {
-            console.log("Error creating a checkout", error);
-            setLoading(false);
-            toast.error("Error creating a checkout.", {
-              description: "Please contact support if the problem persists.",
-            });
-          }
-        }}
+        onClick={handleSignUp} // Simplified onClick handler
         {...otherProps}
       >
         {icon}

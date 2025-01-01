@@ -384,26 +384,26 @@ export async function processWebhookEvent(webhookEvent: WebhookEvent) {
               },
             });
           }
-          const userSubs: NewSubscription[] = await db
-            .select()
-            .from(subscriptions)
-            .where(eq(subscriptions.userId, userId));
-          const activeSubscription = userSubs.find(
-            (sub) => sub.status === "active" && sub.planId !== planId
-          );
-          if (activeSubscription && activeSubscription.lemonSqueezyId) {
-            await pauseUserSubscription(activeSubscription.lemonSqueezyId);
-          }
 
           await db.insert(subscriptions).values(updateData).onConflictDoUpdate({
             target: subscriptions.lemonSqueezyId,
             set: updateData,
           });
-          const userSubscriptions: NewSubscription[] = await db
+
+          const userSubs: NewSubscription[] = await db
             .select()
             .from(subscriptions)
             .where(eq(subscriptions.userId, userId));
-          userSubscriptions.some((sub) => sub.status === "active");
+
+          const activeSubscriptions = userSubs.filter(
+            (sub) => sub.status === "active" && sub.planId !== planId
+          );
+
+          if (activeSubscriptions.length > 0) {
+            for (const activeSub of activeSubscriptions) {
+              await pauseUserSubscription(activeSub.lemonSqueezyId);
+            }
+          }
         } catch (error) {
           processingError = `Failed to upsert Subscription #${updateData.lemonSqueezyId} to the database.`;
           log.error(
@@ -497,7 +497,9 @@ export async function cancelSub(id: string) {
   } catch (error) {
     throw new Error(`Failed to cancel Subscription #${id} in the database.`);
   }
-  revalidatePath("/");
+
+  revalidatePath("/settings/subscriptions");
+  revalidatePath("/settings/subscriptions/plans");
   return cancelledSub;
 }
 
@@ -539,7 +541,9 @@ export async function pauseUserSubscription(id: string) {
   } catch (error) {
     throw new Error(`Failed to pause Subscription #${id} in the database.`);
   }
-  revalidatePath("/");
+
+  revalidatePath("/settings/subscriptions");
+  revalidatePath("/settings/subscriptions/plans");
   return returnedSub;
 }
 
@@ -577,7 +581,9 @@ export async function unpauseUserSubscription(id: string) {
   } catch (error) {
     throw new Error(`Failed to pause Subscription #${id} in the database.`);
   }
-  revalidatePath("/");
+
+  revalidatePath("/settings/subscriptions");
+  revalidatePath("/settings/subscriptions/plans");
   return returnedSub;
 }
 
@@ -628,7 +634,9 @@ export async function changePlan(currentPlanId: string, newPlanId: string) {
       `Failed to update Subscription #${subscription.lemonSqueezyId} in the database.`
     );
   }
-  revalidatePath("/");
+
+  revalidatePath("/settings/subscriptions");
+  revalidatePath("/settings/subscriptions/plans");
   return updatedSub;
 }
 
