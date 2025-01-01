@@ -410,7 +410,28 @@ export async function processWebhookEvent(webhookEvent: WebhookEvent) {
           if (activeSubscriptions.length > 0) {
             for (const activeSub of activeSubscriptions) {
               try {
-                await pauseUserSubscription(activeSub.lemonSqueezyId);
+                const returnedSub = await updateSubscription(
+                  activeSub.lemonSqueezyId,
+                  {
+                    pause: {
+                      mode: "void",
+                    },
+                  }
+                );
+
+                // Update the db
+                await db
+                  .update(subscriptions)
+                  .set({
+                    status: returnedSub.data?.data.attributes.status,
+                    statusFormatted:
+                      returnedSub.data?.data.attributes.status_formatted,
+                    endsAt: returnedSub.data?.data.attributes.ends_at,
+                    isPaused: returnedSub.data?.data.attributes.pause !== null,
+                  })
+                  .where(
+                    eq(subscriptions.lemonSqueezyId, activeSub.lemonSqueezyId)
+                  );
                 console.log(
                   `Successfully paused subscription: ${activeSub.lemonSqueezyId}`
                 );
