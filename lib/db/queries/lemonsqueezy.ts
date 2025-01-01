@@ -384,16 +384,6 @@ export async function processWebhookEvent(webhookEvent: WebhookEvent) {
               },
             });
           }
-          const userSubs: NewSubscription[] = await db
-            .select()
-            .from(subscriptions)
-            .where(eq(subscriptions.userId, userId));
-          const activeSubscription = userSubs.find(
-            (sub) => sub.status === "active"
-          );
-          if (activeSubscription && activeSubscription.lemonSqueezyId) {
-            await pauseUserSubscription(activeSubscription.lemonSqueezyId);
-          }
 
           await db.insert(subscriptions).values(updateData).onConflictDoUpdate({
             target: subscriptions.lemonSqueezyId,

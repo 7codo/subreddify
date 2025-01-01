@@ -85,12 +85,12 @@ export function NoPlanInfoMessage({
         Your current usage:
         <ul className="mt-2 list-disc list-inside">
           <li>
-            {usage.tokens}/{formatNumber(USAGE_LIMIT[currentPlanName].tokens)}{" "}
-            tokens used{" "}
+            {formatNumber(usage.tokens)}/
+            {formatNumber(USAGE_LIMIT[currentPlanName].tokens)} tokens used{" "}
           </li>
           <li>
-            {usage.resources}/
-            {bytesToGB(USAGE_LIMIT[currentPlanName].resources)} resources
+            {usage.resources}bytes/
+            {bytesToGB(USAGE_LIMIT[currentPlanName].resources)}gb resources
             created
           </li>
         </ul>

@@ -19,7 +19,10 @@ import {
 } from "@/lib/db/queries";
 import { VARIANT_ID } from "@/lib/constants";
 import { Plan } from "@/lib/types/global";
-import { Subscription } from "@lemonsqueezy/lemonsqueezy.js";
+import {
+  Subscription,
+  updateSubscription,
+} from "@lemonsqueezy/lemonsqueezy.js";
 import { isAfter } from "date-fns";
 import { handleError } from "@/lib/utils/error-handler";
 
@@ -73,104 +76,136 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
     };
 
     async function handSignUp() {
-      if (isChangingPlans) {
-        if (!currentPlan?.id) {
-          throw new Error("Current plan not found.");
-        }
-
-        if (
-          plan.variantId === VARIANT_ID.free.monthly ||
-          plan.variantId === VARIANT_ID.free.yearly
-        ) {
-          toast.warning(
-            "Go to Subscriptions and cancel your current plan to return to the free plan."
-          );
-          return;
-        }
-        if (!plan.id) {
-          throw new Error("New plan not found.");
-        }
-
-        // Get current active subscription
-        const currentSubscription = userSubscriptions.find(
-          (sub) =>
-            sub.planId === currentPlan.id &&
-            ((sub.renewsAt && isAfter(new Date(sub.renewsAt), new Date())) ||
-              (sub.endsAt && isAfter(new Date(sub.endsAt), new Date()))) &&
-            sub.status !== "cancelled"
-        );
-
-        if (!currentSubscription) {
-          return;
-        }
-
-        // Get previously switched subscription for the target plan
-        const switchedSubscription = userSubscriptions.find(
-          (sub) => sub.planId === plan.id && sub.status !== "cancelled"
-        );
-
-        // Check if switched subscription exists and is not expired
-        const isSwitchedSubscriptionValid =
-          switchedSubscription &&
-          ((switchedSubscription.renewsAt &&
-            isAfter(new Date(switchedSubscription.renewsAt), new Date())) ||
-            (switchedSubscription.endsAt &&
-              isAfter(new Date(switchedSubscription.endsAt), new Date())));
-
-        setLoading(true);
-
-        if (isSwitchedSubscriptionValid) {
-          // If valid switched subscription exists, pause current and unpause switched
-          await pauseUserSubscription(currentSubscription.lemonSqueezyId);
-          await unpauseUserSubscription(switchedSubscription.lemonSqueezyId);
-          toast.success("Successfully switched plans");
-          router.push("/settings/subscriptions");
-        } else {
-          // Create new subscription and pause current
-          const checkoutUrl = (
-            await getCheckoutURL({ variantId: plan.variantId, embed })
-          )?.data;
-
-          if (!checkoutUrl) {
-            throw new Error("Failed to create checkout URL");
+      setLoading(true);
+      try {
+        if (isChangingPlans) {
+          if (!currentPlan?.id) {
+            throw new Error("Current plan not found.");
           }
 
-          embed
-            ? (window as any).LemonSqueezy.Url.Open(checkoutUrl)
-            : router.push(checkoutUrl);
-        }
+          if (isFreeVariant) {
+            toast.warning(
+              "Go to Subscriptions and cancel your current plan to return to the free plan."
+            );
+            return;
+          }
+          if (!plan.id) {
+            throw new Error("New plan not found.");
+          }
 
-        return;
-      }
-      if (pausedPlansIds.length > 0) {
-        const currentSubscription = userSubscriptions.find(
-          (sub) =>
-            sub.planId === plan.id &&
-            ((sub.renewsAt && isAfter(new Date(sub.renewsAt), new Date())) ||
-              (sub.endsAt && isAfter(new Date(sub.endsAt), new Date()))) &&
-            sub.status !== "cancelled"
-        );
+          // Get current active subscription
+          const currentSubscription = userSubscriptions.find(
+            (sub) =>
+              sub.planId === currentPlan.id &&
+              ((sub.renewsAt && isAfter(new Date(sub.renewsAt), new Date())) ||
+                (sub.endsAt && isAfter(new Date(sub.endsAt), new Date()))) &&
+              sub.status !== "cancelled"
+          );
 
-        if (currentSubscription) {
-          await unpauseUserSubscription(currentSubscription.lemonSqueezyId);
-          toast.success("Successfully activated plan");
-          router.push("/settings/subscriptions");
+          if (!currentSubscription) {
+            throw new Error("Active subscription not found");
+          }
+
+          // Get previously switched subscription for the target plan
+          const switchedSubscription = userSubscriptions.find(
+            (sub) => sub.planId === plan.id && sub.status !== "cancelled"
+          );
+
+          const isSwitchedSubscriptionValid =
+            switchedSubscription &&
+            ((switchedSubscription.renewsAt &&
+              isAfter(new Date(switchedSubscription.renewsAt), new Date())) ||
+              (switchedSubscription.endsAt &&
+                isAfter(new Date(switchedSubscription.endsAt), new Date())));
+
+          if (isSwitchedSubscriptionValid && switchedSubscription) {
+            const [, pauseError] = await handleError(
+              pauseUserSubscription(currentSubscription.lemonSqueezyId),
+              { path: "signup-button.tsx" }
+            );
+            if (pauseError)
+              throw new Error("Failed to pause current subscription");
+
+            const [, unpauseError] = await handleError(
+              unpauseUserSubscription(switchedSubscription.lemonSqueezyId),
+              { path: "signup-button.tsx" }
+            );
+            if (unpauseError)
+              throw new Error("Failed to unpause target subscription");
+
+            toast.success("Successfully switched plans");
+            router.push("/settings/subscriptions");
+          } else {
+            const [result, error] = await handleError(
+              pauseUserSubscription(currentSubscription.lemonSqueezyId),
+              {
+                path: "signup-button.tsx",
+              }
+            );
+
+            if (error) {
+              throw new Error("Failed to create checkout URL");
+            }
+
+            const [checkoutResult, checkoutError] = await handleError(
+              getCheckoutURL({ variantId: plan.variantId, embed }),
+              { path: "signup-button.tsx" }
+            );
+            if (checkoutError || !checkoutResult?.data) {
+              throw new Error("Failed to create checkout URL");
+            }
+
+            embed
+              ? (window as any).LemonSqueezy.Url.Open(checkoutResult.data)
+              : router.push(checkoutResult.data);
+          }
           return;
         }
+
+        if (pausedPlansIds.length > 0) {
+          const currentSubscription = userSubscriptions.find(
+            (sub) =>
+              sub.planId === plan.id &&
+              ((sub.renewsAt && isAfter(new Date(sub.renewsAt), new Date())) ||
+                (sub.endsAt && isAfter(new Date(sub.endsAt), new Date()))) &&
+              sub.status !== "cancelled"
+          );
+
+          if (currentSubscription) {
+            const [, unpauseError] = await handleError(
+              unpauseUserSubscription(currentSubscription.lemonSqueezyId),
+              { path: "signup-button.tsx" }
+            );
+            if (unpauseError) throw new Error("Failed to activate plan");
+
+            toast.success("Successfully activated plan");
+            router.push("/settings/subscriptions");
+            return;
+          }
+        }
+
+        const [checkoutResult, checkoutError] = await handleError(
+          getCheckoutURL({ variantId: plan.variantId, embed }),
+          { path: "signup-button.tsx" }
+        );
+
+        if (checkoutError || !checkoutResult?.data) {
+          throw new Error("Failed to create checkout URL");
+        }
+
+        embed
+          ? (window as any).LemonSqueezy.Url.Open(checkoutResult.data)
+          : router.push(checkoutResult.data);
+      } catch (error) {
+        toast.error("Failed to process subscription", {
+          description:
+            error instanceof Error
+              ? error.message
+              : "Please contact support if the problem persists.",
+        });
+      } finally {
+        setLoading(false);
       }
-      let checkoutUrl: string | undefined = "";
-      setLoading(true);
-      checkoutUrl = (await getCheckoutURL({ variantId: plan.variantId, embed }))
-        ?.data;
-
-      embed
-        ? checkoutUrl && (window as any).LemonSqueezy.Url.Open(checkoutUrl)
-        : router.push(checkoutUrl ?? "/");
-
-      setLoading(false);
-      toast("Error creating a checkout.", {
-        description: "Please contact support if the problem persists.",
-      });
     }
 
     const icon = loading ? (
@@ -192,12 +227,12 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
         }
         variant={loading || isCurrent ? "outline" : "landing"}
         onClick={async () => {
-          const [result, error] = await handleError(handSignUp(), {
-            path: "signup-button.tsx",
-          });
-          if (error) {
+          try {
+            await handSignUp();
+          } catch (error) {
+            console.log("Error creating a checkout", error);
             setLoading(false);
-            toast("Error creating a checkout.", {
+            toast.error("Error creating a checkout.", {
               description: "Please contact support if the problem persists.",
             });
           }
