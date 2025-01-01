@@ -1,17 +1,20 @@
 "use client";
 
-import { NewPlan } from "@/lib/db/schemas";
+import { NewPlan, NewSubscription } from "@/lib/db/schemas";
 import { usePricing } from "@/lib/stores/pricing-store";
 import { useEffect, useState } from "react";
 import { Plan } from "./plan";
 import { filterPlansByInterval } from "@/lib/utils";
 import { Plan as PlanType } from "@/lib/types/global";
+import { Subscription } from "@lemonsqueezy/lemonsqueezy.js";
 
 type FilteredPlansType = {
   plans: NewPlan[];
   currentPlan?: NewPlan | null;
   isChangingPlans?: boolean;
   currentPlanName?: PlanType;
+  userSubscriptions: NewSubscription[];
+  pausedPlansIds: string[];
 };
 
 export default function FilteredPlans({
@@ -19,6 +22,8 @@ export default function FilteredPlans({
   currentPlan,
   isChangingPlans,
   currentPlanName,
+  userSubscriptions,
+  pausedPlansIds,
 }: FilteredPlansType) {
   const [filterPlans, setFilteredPlans] = useState(
     filterPlansByInterval(plans)
@@ -41,6 +46,8 @@ export default function FilteredPlans({
             currentPlan={currentPlan}
             isChangingPlans={isChangingPlans}
             currentPlanName={currentPlanName}
+            userSubscriptions={userSubscriptions}
+            pausedPlansIds={pausedPlansIds}
           />
         );
       })}

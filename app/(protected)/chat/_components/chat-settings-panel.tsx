@@ -301,7 +301,7 @@ export function SettingsPanel({ resources, id }: SettingsPanelProps) {
                             <CardContent className="pt-4 sm:pt-6">
                               <h3 className="text-base sm:text-lg font-semibold mb-1.5 sm:mb-2">
                                 <a
-                                  href={post.permalink}
+                                  href={`https://www.reddit.com${post.permalink}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="hover:underline text-primary"

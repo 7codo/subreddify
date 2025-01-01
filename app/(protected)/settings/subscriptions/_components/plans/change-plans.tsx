@@ -2,23 +2,22 @@ import BillingToggle from "@/components/billing-toggle";
 import { getUserSubscriptions, listPlans } from "@/lib/db/queries";
 import { type NewPlan } from "@/lib/db/schemas";
 import { redirect } from "next/navigation";
-import { NoPlans, Plan } from "./plan";
+import { NoPlans } from "./plan";
 import FilteredPlans from "./filtered-plans";
 import { VARIANT_ID } from "@/lib/constants";
+import { Plan } from "@/lib/types/global";
 
 type Props = {
   currentPlan?: NewPlan;
+  currentPlanName: Plan;
 };
 
-export async function ChangePlans({ currentPlan }: Props) {
+export async function ChangePlans({ currentPlan, currentPlanName }: Props) {
   let allPlans: NewPlan[] = (await listPlans()) ?? [];
   const userSubscriptions = (await getUserSubscriptions())?.data ?? [];
 
-  // If user does not have a valid subscription, redirect to the billing page, or
-  // if there are no plans in the database, redirect to the billing page to fetch.
-  if (!userSubscriptions.length || !allPlans.length) {
-    redirect("/settings/subscriptions/plans");
-  }
+  const pausedSubs = userSubscriptions.filter((sub) => sub.status === "paused");
+
   const isCurrentPlanUsageBased = currentPlan?.isUsageBased;
 
   const filteredPlans = allPlans.filter((plan) => {
@@ -37,7 +36,10 @@ export async function ChangePlans({ currentPlan }: Props) {
       <FilteredPlans
         plans={filteredPlans}
         currentPlan={currentPlan}
-        isChangingPlans={true}
+        isChangingPlans={!!currentPlan}
+        userSubscriptions={userSubscriptions}
+        currentPlanName={currentPlanName}
+        pausedPlansIds={pausedSubs.map((sub) => sub.planId)}
       />
 
       {/* <InfoMessage /> */}

@@ -7,28 +7,24 @@ import { memo } from "react";
 
 const suggestedActions = [
   {
-    title: "What are your biggest challenges?",
-    label: "Understand their pain points to identify how you can help.",
-    action: "What are your biggest challenges?",
+    title: "Identify Challenges",
+    label: "Ask to uncover key pain points and areas of improvement.",
+    action: "Could you share what challenges users often encounter?",
   },
-
   {
-    title: "What motivates your decisions?",
-    label: "Learn what drives their choices to align your offerings.",
-    action: "What motivates your decisions?",
+    title: "Decision Drivers",
+    label: "Ask to understand what influences their decisions.",
+    action: "What factors do you think influence decisions in this space?",
   },
-
   {
-    title: "How do you prefer to engage with businesses?",
-    label: "Discover their preferred communication and interaction methods.",
-    action: "How do you prefer to engage with businesses?",
+    title: "Engagement Preferences",
+    label: "Ask to discover how they prefer to interact with businesses.",
+    action: "How do people typically prefer to engage with businesses?",
   },
-
   {
-    title: "What do you value most in a solution?",
-    label:
-      "Understand the key factors they prioritize (e.g., cost, speed, quality).",
-    action: "What do you value most in a solution?",
+    title: "Solution Priorities",
+    label: "Ask to identify the most important factors in choosing a solution.",
+    action: "What do you think users value most in a solution?",
   },
 ];
 
@@ -42,7 +38,7 @@ interface SuggestedActionsProps {
 
 function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
   return (
-    <div className="grid sm:grid-cols-2 gap-2 w-full">
+    <div className="grid sm:grid-cols-2 grid-cols-1 gap-2 w-full">
       {suggestedActions.map((suggestedAction, index) => (
         <motion.div
           initial={{ opacity: 0, y: 20 }}

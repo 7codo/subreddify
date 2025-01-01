@@ -83,11 +83,11 @@ type Feature = {
   soon?: boolean;
 };
 
-const formatNumber = (num: number) => {
+export const formatNumber = (num: number) => {
   return new Intl.NumberFormat("en-US").format(num);
 };
 
-const bytesToGB = (bytes: number) => {
+export const bytesToGB = (bytes: number) => {
   return (bytes / (1024 * 1024 * 1024)).toFixed(2); // Rounds to 3 decimal places
 };
 

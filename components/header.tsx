@@ -1,7 +1,7 @@
-'use client';
-import { FlagIcon } from 'lucide-react';
-import { usePathname, useSelectedLayoutSegment } from 'next/navigation';
-import { useState } from 'react';
+"use client";
+import { FlagIcon } from "lucide-react";
+import { usePathname, useSelectedLayoutSegment } from "next/navigation";
+import { useState } from "react";
 
 import {
   Breadcrumb,
@@ -10,25 +10,26 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Separator } from '@/components/ui/separator';
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 
-import { FeedbackDialog } from './feedback-dialog';
-import { Button } from './ui/button';
-import { SidebarTrigger } from './ui/sidebar';
-
-
+import { FeedbackDialog } from "./feedback-dialog";
+import { Button } from "./ui/button";
+import { SidebarTrigger } from "./ui/sidebar";
+import { useWindowSize } from "usehooks-ts";
 
 type Props = {
   title?: string;
-  rightChildren?: React.ReactNode
+  rightChildren?: React.ReactNode;
 };
 
 const Header: React.FC<Props> = ({ title, rightChildren }) => {
   const pathname = usePathname();
-  const paths = pathname.split('/');
-  const [openFeedbackDialog, setOpenFeedbackDialog] = useState(false)
+  const paths = pathname.split("/");
+  const [openFeedbackDialog, setOpenFeedbackDialog] = useState(false);
   const mainPage = paths[1];
+  const { width: windowWidth } = useWindowSize();
+  const isMobile = windowWidth < 768;
 
   return (
     <>
@@ -62,11 +63,17 @@ const Header: React.FC<Props> = ({ title, rightChildren }) => {
         </div>
         <div className="flex items-center gap-x-2">
           {rightChildren}
-          <Button variant="outline" size="icon" onClick={() => {
-            setOpenFeedbackDialog(prevState => !prevState)
-          }}>
-            <FlagIcon size={14} />
-          </Button>
+          {!isMobile && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setOpenFeedbackDialog((prevState) => !prevState);
+              }}
+            >
+              <FlagIcon size={14} />
+            </Button>
+          )}
         </div>
       </header>
       <FeedbackDialog customOpen={openFeedbackDialog} />

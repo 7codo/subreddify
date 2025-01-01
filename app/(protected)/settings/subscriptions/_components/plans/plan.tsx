@@ -1,11 +1,13 @@
 import PlanCard from "@/components/plan-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { USAGE_LIMIT } from "@/lib/constants";
-import { type NewPlan } from "@/lib/db/schemas";
+import { bytesToGB, formatNumber, USAGE_LIMIT } from "@/lib/constants";
+import { NewSubscription, type NewPlan } from "@/lib/db/schemas";
 import { Plan as PlanType } from "@/lib/types/global";
 import { AlertCircle, SearchXIcon } from "lucide-react";
 import Link from "next/link";
 import { SignupButton } from "./signup-button";
+import { getUserSubscriptions } from "@/lib/db/queries";
+import { Subscription } from "@lemonsqueezy/lemonsqueezy.js";
 
 export function Plan({
   plan,
@@ -13,12 +15,16 @@ export function Plan({
   isChangingPlans = false,
   index,
   currentPlanName,
+  userSubscriptions,
+  pausedPlansIds,
 }: {
+  pausedPlansIds: string[];
   currentPlanName?: PlanType;
   plan: NewPlan;
   currentPlan?: NewPlan | null;
   isChangingPlans?: boolean;
   index: number;
+  userSubscriptions: NewSubscription[];
 }) {
   const { description, id, productName, interval, price, variantId } = plan;
   const isCurrent = id && currentPlan?.id === id;
@@ -37,6 +43,8 @@ export function Plan({
           plan={plan}
           isChangingPlans={isChangingPlans}
           currentPlan={currentPlan}
+          userSubscriptions={userSubscriptions}
+          pausedPlansIds={pausedPlansIds}
         />
       }
     />
@@ -77,10 +85,12 @@ export function NoPlanInfoMessage({
         Your current usage:
         <ul className="mt-2 list-disc list-inside">
           <li>
-            {usage.tokens}/{USAGE_LIMIT[currentPlanName].tokens} tokens used{" "}
+            {usage.tokens}/{formatNumber(USAGE_LIMIT[currentPlanName].tokens)}{" "}
+            tokens used{" "}
           </li>
           <li>
-            {usage.resources}/{USAGE_LIMIT[currentPlanName].resources} resources
+            {usage.resources}/
+            {bytesToGB(USAGE_LIMIT[currentPlanName].resources)} resources
             created
           </li>
         </ul>

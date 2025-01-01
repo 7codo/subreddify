@@ -21,12 +21,6 @@ export async function Subscriptions() {
   const currentPlanName = (await getCurrentPlanName())?.data ?? "free";
   const usage = await getUsage();
 
-  if (userSubscriptions.length === 0) {
-    return (
-      <NoPlanInfoMessage usage={usage} currentPlanName={currentPlanName} />
-    );
-  }
-
   // Show active subscriptions first, then paused, then canceled
   const sortedSubscriptions = userSubscriptions.sort((a, b) => {
     if (a.status === "active" && b.status !== "active") {
@@ -42,9 +36,8 @@ export async function Subscriptions() {
 
   return (
     <section className="overflow-y-auto size-full p-2">
-      {currentPlanName === "free" && (
-        <NoPlanInfoMessage usage={usage} currentPlanName={currentPlanName} />
-      )}
+      <NoPlanInfoMessage usage={usage} currentPlanName={currentPlanName} />
+
       <section className="space-y-2">
         {sortedSubscriptions.map(
           (subscription: NewSubscription, index: number) => {

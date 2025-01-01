@@ -16,6 +16,7 @@ import {
   Copy,
   CornerUpLeft,
   CornerUpRight,
+  DatabaseIcon,
   FileText,
   GalleryVerticalEnd,
   LineChart,
@@ -45,6 +46,7 @@ function PureChatHeader({
   const router = useRouter();
   const { open } = useSidebar();
   const { width: windowWidth } = useWindowSize();
+  const isMobile = windowWidth < 768;
   const posts = useChatStore((state) => state.posts);
   const setShowSettingsPanel = useChatStore(
     (state) => state.setShowSettingsPanel
@@ -65,6 +67,7 @@ function PureChatHeader({
         <VisibilitySelector
           chatId={chatId}
           disabled={true}
+          size={isMobile ? "sm" : "default"}
           selectedVisibilityType={selectedVisibilityType}
           currentPlanName={"free"}
           className="order-1 md:order-3"
@@ -75,8 +78,10 @@ function PureChatHeader({
         <Button
           variant={showSettingsPanel ? "secondary" : "outline"}
           onClick={() => setShowSettingsPanel(!showSettingsPanel)}
+          size={isMobile ? "sm" : "default"}
         >
-          Resources
+          <DatabaseIcon size={14} />
+          <span className="hidden md:block">Resources</span>
         </Button>
       ) : (
         <TooltipDisplay
@@ -86,7 +91,8 @@ function PureChatHeader({
             variant="secondary"
             onClick={() => setShowSettingsPanel(!showSettingsPanel)}
           >
-            Resources ({posts.length})
+            <DatabaseIcon size={14} />
+            <span className="hidden md:block">Resources</span>
           </Button>
         </TooltipDisplay>
       )}

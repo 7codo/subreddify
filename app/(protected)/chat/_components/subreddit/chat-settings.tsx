@@ -364,13 +364,16 @@ export function ChatSettings({
           </Button>
         </div>
 
-        <ScrollArea className="h-[300px] w-full pr-4" onScroll={handleScroll}>
+        <div
+          className="h-[300px] w-full pr-4 overflow-y-auto"
+          onScroll={handleScroll}
+        >
           {noResults ? (
             <div className="text-center py-4 text-muted-foreground">
               No results found. Please try a different keyword.
             </div>
           ) : searchResults.length > 0 ? (
-            <>
+            <div className="space-y-3">
               {searchResults.map((subreddit, index) => (
                 <SubredditCard
                   key={index}
@@ -391,11 +394,11 @@ export function ChatSettings({
                 />
               ))}
               {loading && <div className="text-center py-2">Loading...</div>}
-            </>
+            </div>
           ) : (
             <p className="text-center py-2">Search to view results.</p>
           )}
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="sm:justify-end">
           <Button

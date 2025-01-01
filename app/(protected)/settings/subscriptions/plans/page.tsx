@@ -2,11 +2,17 @@ import { Suspense } from "react";
 import { PlansSkeleton } from "../_components/skeleton/plans-skeleton";
 import { Plans } from "../_components/plans";
 import PageWrapper from "@/components/page-wrapper";
-import { getCheckoutURL } from "@/lib/db/queries";
+import {
+  getCheckoutURL,
+  getPlanById,
+  getUserSubscriptions,
+} from "@/lib/db/queries";
 import { SearchParams } from "@/lib/types/global";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { createMetadata } from "@/lib/constants/metadata";
+import { ChangePlans } from "../_components/plans/change-plans";
+import { getCurrentPlanName } from "@/lib/actions";
 
 export const metadata = createMetadata({
   title: "Plans",
@@ -23,6 +29,8 @@ export default async function PlansPage({ searchParams }: Props) {
   const searchParamsList = await searchParams;
   const variantIdParam = searchParamsList.variant_id;
   const variantId = Array.isArray(variantIdParam) ? undefined : variantIdParam;
+  const userSubscriptions = (await getUserSubscriptions())?.data ?? [];
+  const currentPlanName = (await getCurrentPlanName())?.data ?? "free";
 
   if (variantId) {
     const checkoutUrl = (
@@ -35,10 +43,19 @@ export default async function PlansPage({ searchParams }: Props) {
     }
   }
 
+  const activeSub = userSubscriptions.find((sub) => sub.status === "active");
+  let currentPlan = undefined;
+  if (activeSub) {
+    currentPlan = (await getPlanById({ id: activeSub.planId }))?.data;
+  }
+
   return (
     <PageWrapper title="Plans">
       <Suspense fallback={<PlansSkeleton />}>
-        <Plans />
+        <ChangePlans
+          currentPlan={currentPlan}
+          currentPlanName={currentPlanName}
+        />
       </Suspense>
     </PageWrapper>
   );

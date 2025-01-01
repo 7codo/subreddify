@@ -51,7 +51,7 @@ const SubredditCard: React.FC<SubredditCardProps> = ({
   if (!isSelected) {
     return (
       <Card
-        className="p-3 sm:p-4 mb-2 cursor-pointer hover:bg-secondary transition-colors"
+        className="p-3 sm:p-4 mb-2 cursor-pointer hover:bg-secondary transition-colors w-full"
         onClick={onSelect}
       >
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
@@ -69,7 +69,7 @@ const SubredditCard: React.FC<SubredditCardProps> = ({
   }
 
   return (
-    <Card className="p-3 sm:p-4 mb-2 border-2 border-primary">
+    <Card className="p-3 sm:p-4 mb-2 border-2 border-primary w-full">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
         <h3 className="font-bold">r/{data.display_name}</h3>
         <div className="flex items-center gap-2 relative">
