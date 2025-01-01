@@ -395,13 +395,32 @@ export async function processWebhookEvent(webhookEvent: WebhookEvent) {
             .from(subscriptions)
             .where(eq(subscriptions.userId, userId));
 
-          const activeSubscriptions = userSubs.filter(
-            (sub) => sub.status === "active" && sub.planId !== planId
-          );
+          // Add logging to debug
+          console.log("Found user subscriptions:", userSubs);
+
+          const activeSubscriptions = userSubs.filter((sub) => {
+            // More explicit status check
+            const isActive = sub.status.toLowerCase() === "active";
+            const isDifferentPlan = sub.planId !== planId;
+            return isActive && isDifferentPlan;
+          });
+
+          console.log("Active subscriptions to pause:", activeSubscriptions);
 
           if (activeSubscriptions.length > 0) {
             for (const activeSub of activeSubscriptions) {
-              await pauseUserSubscription(activeSub.lemonSqueezyId);
+              try {
+                await pauseUserSubscription(activeSub.lemonSqueezyId);
+                console.log(
+                  `Successfully paused subscription: ${activeSub.lemonSqueezyId}`
+                );
+              } catch (error) {
+                console.error(
+                  `Failed to pause subscription ${activeSub.lemonSqueezyId}:`,
+                  error
+                );
+                throw error; // Re-throw to handle in calling code
+              }
             }
           }
         } catch (error) {

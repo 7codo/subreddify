@@ -117,23 +117,11 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
               (switchedSubscription.endsAt &&
                 isAfter(new Date(switchedSubscription.endsAt), new Date())));
 
-          if (Number(plan.price) < Number(currentPlan.price)) {
-            const [result, error] = await handleError(
-              changePlan(currentPlan.id, plan.id),
-              {
-                path: "signup-button.tsx",
-              }
-            );
-            if (error) {
-              throw new Error("Failed to switch plans");
-            }
-            toast.success("Successfully switched plans", {
-              description: `In the future, you will be charged ${plan.price}.`,
-            });
-            setLoading(false); // Add this to reset loading state
-            return;
-          }
-          if (isSwitchedSubscriptionValid && switchedSubscription) {
+          if (
+            switchedSubscription &&
+            (Number(plan.price) < Number(currentPlan.price) ||
+              isSwitchedSubscriptionValid)
+          ) {
             const [, pauseError] = await handleError(
               pauseUserSubscription(currentSubscription.lemonSqueezyId),
               { path: "signup-button.tsx" }
