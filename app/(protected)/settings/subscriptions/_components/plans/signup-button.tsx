@@ -19,10 +19,7 @@ import {
 } from "@/lib/db/queries";
 import { VARIANT_ID } from "@/lib/constants";
 import { Plan } from "@/lib/types/global";
-import {
-  Subscription,
-  updateSubscription,
-} from "@lemonsqueezy/lemonsqueezy.js";
+import { Subscription } from "@lemonsqueezy/lemonsqueezy.js";
 import { isAfter } from "date-fns";
 import { handleError } from "@/lib/utils/error-handler";
 
@@ -118,6 +115,21 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
               (switchedSubscription.endsAt &&
                 isAfter(new Date(switchedSubscription.endsAt), new Date())));
 
+          if (Number(plan.price) < Number(currentPlan.price)) {
+            const [result, error] = await handleError(
+              changePlan(currentPlan.id, plan.id),
+              {
+                path: "signup-button.tsx",
+              }
+            );
+            if (error) {
+              throw new Error("Failed to switch plans");
+            }
+            toast.success("Successfully switched plans", {
+              description: `In the future, you will be charged ${plan.price}.`,
+            });
+            return;
+          }
           if (isSwitchedSubscriptionValid && switchedSubscription) {
             const [, pauseError] = await handleError(
               pauseUserSubscription(currentSubscription.lemonSqueezyId),
@@ -136,17 +148,6 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
             toast.success("Successfully switched plans");
             router.push("/settings/subscriptions");
           } else {
-            const [result, error] = await handleError(
-              pauseUserSubscription(currentSubscription.lemonSqueezyId),
-              {
-                path: "signup-button.tsx",
-              }
-            );
-
-            if (error) {
-              throw new Error("Failed to create checkout URL");
-            }
-
             const [checkoutResult, checkoutError] = await handleError(
               getCheckoutURL({ variantId: plan.variantId, embed }),
               { path: "signup-button.tsx" }

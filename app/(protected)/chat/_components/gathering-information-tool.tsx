@@ -18,14 +18,14 @@ const GatheringInformationTool = ({
   if (!result) {
     return (
       <Card className="p-0">
-        <CardHeader className="px-2 sm:px-3 pb-1 pt-2 sm:pt-3">
-          <CardTitle className="sm:text-lg">Resources</CardTitle>
+        <CardHeader className="px-3 md:px-4 pb-2 pt-3 md:pt-4">
+          <CardTitle className="text-base md:text-lg">Resources</CardTitle>
         </CardHeader>
-        <CardContent className="px-2 sm:px-3 pt-1 pb-2 sm:pb-3">
-          <div className="space-y-1.5 sm:space-y-2">
-            <Skeleton className="h-3 sm:h-4 w-full" />
-            <Skeleton className="h-3 sm:h-4 w-3/4" />
-            <Skeleton className="h-3 sm:h-4 w-1/2" />
+        <CardContent className="px-3 md:px-4 pt-1 pb-3 md:pb-4">
+          <div className="space-y-2 md:space-y-3">
+            <Skeleton className="h-4 md:h-5 w-full" />
+            <Skeleton className="h-4 md:h-5 w-3/4" />
+            <Skeleton className="h-4 md:h-5 w-1/2" />
           </div>
         </CardContent>
       </Card>
@@ -39,47 +39,49 @@ const GatheringInformationTool = ({
 
   return (
     <Card className="p-0">
-      <CardHeader className="px-2 sm:px-3 pb-1 pt-2 sm:pt-3">
-        <CardTitle className="sm:text-lg">Resources</CardTitle>
+      <CardHeader className="px-3 md:px-4 pb-2 pt-3 md:pt-4">
+        <CardTitle className="text-base md:text-lg">Resources</CardTitle>
       </CardHeader>
-      <CardContent className="px-2 sm:px-3 pt-1 pb-2 sm:pb-3">
+      <CardContent className="px-3 md:px-4 pt-1 pb-3 md:pb-4">
         {!posts && !comments ? (
-          <div className="space-y-1.5 sm:space-y-2">
-            <Skeleton className="h-3 sm:h-4 w-full" />
-            <Skeleton className="h-3 sm:h-4 w-3/4" />
-            <Skeleton className="h-3 sm:h-4 w-1/2" />
+          <div className="space-y-2 md:space-y-3">
+            <Skeleton className="h-4 md:h-5 w-full" />
+            <Skeleton className="h-4 md:h-5 w-3/4" />
+            <Skeleton className="h-4 md:h-5 w-1/2" />
           </div>
         ) : (
           <Collapsible>
             <div className="flex items-center justify-between">
-              <p className="text-xs sm:text-sm text-muted-foreground">
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Found: {posts.length} posts, {comments.length} comments
               </p>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <ChevronDown className="size-4" />
+                <Button variant="ghost" size="sm" className="h-8 md:h-9">
+                  <ChevronDown className="size-4 md:size-5" />
                 </Button>
               </CollapsibleTrigger>
             </div>
-            <CollapsibleContent className="mt-3 space-y-4">
+            <CollapsibleContent className="mt-4 space-y-5">
               {posts.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold mb-2">Posts</h3>
-                  <div className="space-y-2">
+                  <h3 className="text-sm md:text-base font-semibold mb-3">
+                    Posts
+                  </h3>
+                  <div className="space-y-3">
                     {posts.map((post, index) => (
                       <div
                         key={index}
-                        className="p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        className="p-2.5 md:p-3 rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         <a
                           href={post.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm font-medium hover:text-primary"
+                          className="text-sm md:text-base font-medium hover:text-primary"
                         >
                           {post.title}
                         </a>
-                        <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                        <div className="flex flex-wrap gap-2 text-xs md:text-sm text-muted-foreground mt-1.5">
                           <span>r/{post.subreddit}</span>
                           <span>•</span>
                           <span>u/{post.author}</span>
@@ -96,21 +98,22 @@ const GatheringInformationTool = ({
 
               {comments.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold mb-2">Comments</h3>
-                  <div className="space-y-2">
+                  <h3 className="text-sm md:text-base font-semibold mb-3">
+                    Comments
+                  </h3>
+                  <div className="space-y-3">
                     {comments.map((comment, index) => (
                       <div
                         key={index}
-                        className="p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                        className="p-2.5 md:p-3 rounded-lg hover:bg-muted/50 transition-colors"
                       >
-                        <p className="text-sm">{comment.body}</p>
-                        <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                        <p className="text-sm md:text-base">{comment.body}</p>
+                        <div className="flex flex-wrap gap-2 text-xs md:text-sm text-muted-foreground mt-1.5">
                           <span>u/{comment.author}</span>
                           <span>•</span>
                           <span>{comment.score ?? 0} points</span>
                           <span>•</span>
                           <span>{formatDate(comment.created)}</span>
-                          <span>•</span>
                         </div>
                       </div>
                     ))}
