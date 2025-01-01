@@ -1,5 +1,5 @@
 import BillingToggle from "@/components/billing-toggle";
-import { getUserSubscriptions, listPlans } from "@/lib/db/queries";
+import { getUserSubscriptions, listPlans, syncPlans } from "@/lib/db/queries";
 import { type NewPlan } from "@/lib/db/schemas";
 import { redirect } from "next/navigation";
 import { NoPlans } from "./plan";
@@ -26,7 +26,12 @@ export async function ChangePlans({ currentPlan, currentPlanName }: Props) {
       : Boolean(!plan.isUsageBased);
   });
 
-  if (filteredPlans.length < 2) {
+  if (filteredPlans.length === 2) {
+    console.log("syncing");
+    allPlans = await syncPlans();
+  }
+
+  if (!filteredPlans.length) {
     return <NoPlans />;
   }
 

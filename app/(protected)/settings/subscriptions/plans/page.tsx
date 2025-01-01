@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { PlansSkeleton } from "../_components/skeleton/plans-skeleton";
-import { Plans } from "../_components/plans";
 import PageWrapper from "@/components/page-wrapper";
 import {
   getCheckoutURL,
