@@ -73,6 +73,17 @@ export const insertUsageSchema = createInsertSchema(usages).extend({}).omit({
   userId: true,
 });
 
+export const credits = pgTable("credit", {
+  variantId: text("variant_id").notNull().unique(),
+  userId: text("user_id").notNull().unique(),
+  tokens: bigint({ mode: "number" }),
+  resources: bigint({ mode: "number" }),
+});
+export const inserCreditSchema = createInsertSchema(credits).extend({}).omit({
+  variantId: true,
+  userId: true,
+});
+
 export type NewPlan = typeof plans.$inferInsert;
 export type PlanType = typeof plans.$inferInsert;
 export type NewWebhookEvent = typeof webhookEvents.$inferInsert;

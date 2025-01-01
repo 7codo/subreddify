@@ -58,6 +58,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     DEFAULT_MODEL_NAME;
 
   const currentPlanName = (await getCurrentPlanName())?.data ?? "free";
+
   return (
     <PageWrapper
       rightChildren={

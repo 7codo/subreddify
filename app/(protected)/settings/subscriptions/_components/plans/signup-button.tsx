@@ -117,11 +117,7 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
               (switchedSubscription.endsAt &&
                 isAfter(new Date(switchedSubscription.endsAt), new Date())));
 
-          if (
-            switchedSubscription &&
-            (Number(plan.price) < Number(currentPlan.price) ||
-              isSwitchedSubscriptionValid)
-          ) {
+          if (isSwitchedSubscriptionValid && switchedSubscription) {
             const [, pauseError] = await handleError(
               pauseUserSubscription(currentSubscription.lemonSqueezyId),
               { path: "signup-button.tsx" }

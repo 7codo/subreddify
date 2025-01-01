@@ -18,6 +18,8 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import {
+  credits,
+  inserCreditSchema,
   insertUsageSchema,
   plans,
   subscriptions,
@@ -35,7 +37,7 @@ import { webhookHasData, webhookHasMeta } from "@/lib/types/typeguards";
 import { clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { log } from "@/lib/utils/log";
-import { FREE_PLAN } from "@/lib/constants";
+import { FREE_PLAN, USAGE_LIMIT, VARIANT_ID } from "@/lib/constants";
 
 export async function listPlans() {
   const relatedPlans = await db.query.plans.findMany();
@@ -286,193 +288,6 @@ export async function storeWebhookEvent(
 }
 
 /**
- * This action will process a webhook event in the database.
- */
-export async function processWebhookEvent(webhookEvent: WebhookEvent) {
-  configureLemonSqueezy();
-
-  const dbwebhookEvent = await db
-    .select()
-    .from(webhookEvents)
-    .where(eq(webhookEvents.id, webhookEvent.id));
-
-  if (dbwebhookEvent.length < 1) {
-    throw new Error(
-      `Webhook event #${webhookEvent.id} not found in the database.`
-    );
-  }
-
-  if (!process.env.WEBHOOK_URL) {
-    throw new Error(
-      "Missing required WEBHOOK_URL env variable. Please, set it in your .env file."
-    );
-  }
-
-  let processingError = "";
-  const eventBody: any = webhookEvent.body;
-
-  if (!webhookHasMeta(eventBody)) {
-    processingError = "Event body is missing the 'meta' property.";
-  } else if (webhookHasData(eventBody)) {
-    if (webhookEvent.eventName.startsWith("subscription_payment_")) {
-      // Save subscription invoices; eventBody is a SubscriptionInvoice
-      // Not implemented.
-    } else if (webhookEvent.eventName.startsWith("subscription_")) {
-      // Save subscription events; obj is a Subscription
-      const attributes = eventBody.data.attributes;
-      const variantId = attributes.variant_id as string;
-
-      // We assume that the Plan table is up to date.
-      const plan = await db
-        .select()
-        .from(plans)
-        .where(eq(plans.variantId, parseInt(variantId, 10)));
-
-      if (plan.length < 1) {
-        processingError = `Plan with variantId ${variantId} not found.`;
-      } else {
-        // Update the subscription in the database.
-
-        const priceId = attributes.first_subscription_item.price_id;
-
-        // Get the price data from Lemon Squeezy.
-        const priceData = await getPrice(priceId);
-        if (priceData.error) {
-          processingError = `Failed to get the price data for the subscription ${eventBody.data.id}.`;
-        }
-
-        const isUsageBased = attributes.first_subscription_item.is_usage_based;
-        const price = isUsageBased
-          ? priceData.data?.data.attributes.unit_price_decimal
-          : priceData.data?.data.attributes.unit_price;
-
-        const userId = eventBody.meta.custom_data.user_id;
-        const planId = plan[0].id;
-        const status = attributes.status as string;
-
-        const updateData: NewSubscription = {
-          lemonSqueezyId: eventBody.data.id,
-          orderId: attributes.order_id as number,
-          name: attributes.user_name as string,
-          email: attributes.user_email as string,
-          status,
-          statusFormatted: attributes.status_formatted as string,
-          renewsAt: attributes.renews_at as string,
-          endsAt: attributes.ends_at as string,
-          trialEndsAt: attributes.trial_ends_at as string,
-          price: price?.toString() ?? "",
-          isPaused: false,
-          subscriptionItemId: attributes.first_subscription_item.id,
-          isUsageBased: attributes.first_subscription_item.is_usage_based,
-          userId,
-          planId,
-        };
-
-        // Create/update subscription in the database.
-        try {
-          const client = await clerkClient();
-          if (status == "active" || status == "on_trial") {
-            await client.users.updateUserMetadata(userId, {
-              publicMetadata: {
-                variantId,
-              },
-            });
-          } else {
-            await client.users.updateUserMetadata(userId, {
-              publicMetadata: {
-                variantId: null,
-              },
-            });
-          }
-
-          await db.insert(subscriptions).values(updateData).onConflictDoUpdate({
-            target: subscriptions.lemonSqueezyId,
-            set: updateData,
-          });
-
-          const userSubs: NewSubscription[] = await db
-            .select()
-            .from(subscriptions)
-            .where(eq(subscriptions.userId, userId));
-
-          // Add logging to debug
-          console.log("Found user subscriptions:", userSubs);
-
-          const activeSubscriptions = userSubs.filter((sub) => {
-            // More explicit status check
-            const isActive = sub.status.toLowerCase() === "active";
-            const isDifferentPlan = sub.planId !== planId;
-            return isActive && isDifferentPlan;
-          });
-
-          console.log("Active subscriptions to pause:", activeSubscriptions);
-
-          if (activeSubscriptions.length > 0) {
-            for (const activeSub of activeSubscriptions) {
-              try {
-                const returnedSub = await updateSubscription(
-                  activeSub.lemonSqueezyId,
-                  {
-                    pause: {
-                      mode: "void",
-                    },
-                  }
-                );
-
-                // Update the db
-                await db
-                  .update(subscriptions)
-                  .set({
-                    status: returnedSub.data?.data.attributes.status,
-                    statusFormatted:
-                      returnedSub.data?.data.attributes.status_formatted,
-                    endsAt: returnedSub.data?.data.attributes.ends_at,
-                    isPaused: returnedSub.data?.data.attributes.pause !== null,
-                  })
-                  .where(
-                    eq(subscriptions.lemonSqueezyId, activeSub.lemonSqueezyId)
-                  );
-                console.log(
-                  `Successfully paused subscription: ${activeSub.lemonSqueezyId}`
-                );
-              } catch (error) {
-                console.error(
-                  `Failed to pause subscription ${activeSub.lemonSqueezyId}:`,
-                  error
-                );
-                throw error; // Re-throw to handle in calling code
-              }
-            }
-          }
-        } catch (error) {
-          processingError = `Failed to upsert Subscription #${updateData.lemonSqueezyId} to the database.`;
-          log.error(
-            `Failed to upsert Subscription #${
-              updateData.lemonSqueezyId
-            } to the database. Error: ${JSON.stringify(error)}`
-          );
-        }
-      }
-    } else if (webhookEvent.eventName.startsWith("order_")) {
-      // Save orders; eventBody is a "Order"
-      /* Not implemented */
-    } else if (webhookEvent.eventName.startsWith("license_")) {
-      // Save license keys; eventBody is a "License key"
-      /* Not implemented */
-    }
-
-    // Update the webhook event in the database.
-    await db
-      .update(webhookEvents)
-      .set({
-        processed: true,
-        processingError,
-      })
-      .where(eq(webhookEvents.id, webhookEvent.id));
-  }
-}
-
-/**
  * This action will get the subscriptions for the current user.
  */
 
@@ -701,3 +516,34 @@ export const listUsage = safeAction.action(async ({ ctx, parsedInput }) => {
 
   return usage;
 });
+
+export const saveCredit = safeAction
+  .schema(inserCreditSchema)
+  .action(async ({ ctx, parsedInput }) => {
+    const savedCredit = await db
+      .insert(credits)
+      .values({ ...parsedInput, userId: ctx.userId, variantId: ctx.variantId })
+      .onConflictDoUpdate({
+        target: usages.userId,
+        set: parsedInput,
+      })
+      .returning();
+    return savedCredit[0];
+  });
+
+export const getCreditByVariantId = safeAction
+  .schema(
+    z.object({
+      variantId: z.string(),
+    })
+  )
+  .action(async ({ ctx, parsedInput: { variantId } }) => {
+    let credit = await db.query.credits.findFirst({
+      where: and(
+        eq(credits.userId, ctx.userId),
+        eq(credits.variantId, variantId)
+      ),
+    });
+
+    return credit;
+  });
