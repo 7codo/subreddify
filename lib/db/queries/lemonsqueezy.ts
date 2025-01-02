@@ -625,7 +625,6 @@ export async function changePlan(currentPlanId: string, newPlanId: string) {
   }
 
   revalidatePath("/");
-
   return updatedSub;
 }
 

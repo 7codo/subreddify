@@ -198,14 +198,10 @@ export function SidebarUserNav({ currentPlan }: Props) {
                   variant="ghost"
                   className="text-left w-full"
                   onClick={async () => {
-                    await signOut(
-                      () => {
-                        refresh();
-                      },
-                      {
-                        redirectUrl: "/",
-                      }
-                    );
+                    await signOut({
+                      redirectUrl: "/",
+                    });
+                    window.location.reload();
                   }}
                 >
                   <LogOut />

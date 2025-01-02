@@ -110,6 +110,7 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
         setLoading(true);
         await changePlan(currentPlan.id, plan.id);
         setLoading(false);
+        router.refresh();
 
         return;
       }
