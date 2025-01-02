@@ -95,6 +95,14 @@ export const SignupButton = forwardRef<ButtonElement, ButtonProps>(
           throw new Error("Current plan not found.");
         }
 
+        if (isFreeVariant) {
+          toast.warning(
+            "Go to Subscriptions and cancel your current plan to return to the free plan."
+          );
+          setLoading(false); // Add this to reset loading state
+          return;
+        }
+
         if (!plan.id) {
           throw new Error("New plan not found.");
         }
