@@ -7,8 +7,6 @@ import { notFound, redirect } from "next/navigation";
 import { getUnreadNotifications } from "@/lib/db/queries";
 import { getCurrentPlanName } from "@/lib/actions";
 
-export const experimental_ppr = true;
-
 export default async function Layout({
   children,
 }: {

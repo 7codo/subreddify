@@ -149,15 +149,26 @@ export function Chat({
     } else {
       setSavingResources(true);
       setProgress(0);
-      const result = await handleSubmitResources({
-        messages,
-        id,
-        input: appendMessage ?? input,
-        posts,
-        comments,
-      });
+      const [result, error] = await handleError(
+        handleSubmitResources({
+          messages,
+          id,
+          input: appendMessage ?? input,
+          posts,
+          comments,
+        }),
+        {
+          path: "handleSubmitResources chat compo",
+        }
+      );
       setInput("");
       setProgress(0);
+      if (error || !result) {
+        toast.error("An error occurred while saving resources");
+        appendMessage && setSuggestAction("");
+        setSavingResources(false);
+        return;
+      }
       if (result.status === "success" && result.data) {
         append(result.data);
       } else if (result.status === "error") {
