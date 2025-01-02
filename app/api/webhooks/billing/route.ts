@@ -1,9 +1,6 @@
 import crypto from "node:crypto";
 import { webhookHasMeta } from "@/lib/types/typeguards";
-import {
-  processWebhookEvent,
-  storeWebhookEvent,
-} from "@/lib/db/queries";
+import { storeWebhookEvent, processWebhookEvent } from "@/lib/db/queries";
 
 export async function POST(request: Request) {
   if (!process.env.LEMONSQUEEZY_WEBHOOK_SECRET) {

@@ -18,8 +18,6 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import {
-  credits,
-  inserCreditSchema,
   insertUsageSchema,
   plans,
   subscriptions,
@@ -97,6 +95,142 @@ export const getCheckoutURL = safeAction
 
     return checkout.data?.data.attributes.url;
   });
+
+/**
+ * This action will process a webhook event in the database.
+ */
+export async function processWebhookEvent(webhookEvent: WebhookEvent) {
+  configureLemonSqueezy();
+
+  const dbwebhookEvent = await db
+    .select()
+    .from(webhookEvents)
+    .where(eq(webhookEvents.id, webhookEvent.id));
+
+  if (dbwebhookEvent.length < 1) {
+    throw new Error(
+      `Webhook event #${webhookEvent.id} not found in the database.`
+    );
+  }
+
+  if (!process.env.WEBHOOK_URL) {
+    throw new Error(
+      "Missing required WEBHOOK_URL env variable. Please, set it in your .env file."
+    );
+  }
+
+  let processingError = "";
+  const eventBody = webhookEvent.body;
+
+  if (!webhookHasMeta(eventBody)) {
+    processingError = "Event body is missing the 'meta' property.";
+  } else if (webhookHasData(eventBody)) {
+    if (webhookEvent.eventName.startsWith("subscription_payment_")) {
+      // Save subscription invoices; eventBody is a SubscriptionInvoice
+      // Not implemented.
+    } else if (webhookEvent.eventName.startsWith("subscription_")) {
+      // Save subscription events; obj is a Subscription
+      const attributes = eventBody.data.attributes;
+      const variantId = attributes.variant_id as string;
+
+      // We assume that the Plan table is up to date.
+      const plan = await db
+        .select()
+        .from(plans)
+        .where(eq(plans.variantId, parseInt(variantId, 10)));
+
+      if (plan.length < 1) {
+        processingError = `Plan with variantId ${variantId} not found.`;
+      } else {
+        // Update the subscription in the database.
+
+        const priceId = attributes.first_subscription_item.price_id;
+
+        // Get the price data from Lemon Squeezy.
+        const priceData = await getPrice(priceId);
+        if (priceData.error) {
+          processingError = `Failed to get the price data for the subscription ${eventBody.data.id}.`;
+        }
+
+        const isUsageBased = attributes.first_subscription_item.is_usage_based;
+        const price = isUsageBased
+          ? priceData.data?.data.attributes.unit_price_decimal
+          : priceData.data?.data.attributes.unit_price;
+        const userId = eventBody.meta.custom_data.user_id;
+        const planId = plan[0].id;
+        const status = attributes.status as string;
+
+        const updateData: NewSubscription = {
+          lemonSqueezyId: eventBody.data.id,
+          orderId: attributes.order_id as number,
+          name: attributes.user_name as string,
+          email: attributes.user_email as string,
+          status,
+          statusFormatted: attributes.status_formatted as string,
+          renewsAt: attributes.renews_at as string,
+          endsAt: attributes.ends_at as string,
+          trialEndsAt: attributes.trial_ends_at as string,
+          price: price?.toString() ?? "",
+          isPaused: false,
+          subscriptionItemId: attributes.first_subscription_item.id,
+          isUsageBased: attributes.first_subscription_item.is_usage_based,
+          userId,
+          planId,
+        };
+
+        // Create/update subscription in the database.
+        try {
+          const client = await clerkClient();
+          if (status == "active") {
+            await client.users.updateUserMetadata(userId, {
+              publicMetadata: {
+                variantId,
+              },
+            });
+            await db
+              .update(usages)
+              .set({
+                userId,
+                variantId,
+                tokens: 0,
+                resources: 0,
+              })
+              .where(eq(usages.userId, userId));
+          } else {
+            await client.users.updateUserMetadata(userId, {
+              publicMetadata: {
+                variantId: null,
+              },
+            });
+          }
+
+          await db.insert(subscriptions).values(updateData).onConflictDoUpdate({
+            target: subscriptions.lemonSqueezyId,
+            set: updateData,
+          });
+        } catch (error) {
+          processingError = `Failed to upsert Subscription #${updateData.lemonSqueezyId} to the database.`;
+          console.error(error);
+        }
+      }
+    } else if (webhookEvent.eventName.startsWith("order_")) {
+      // Save orders; eventBody is a "Order"
+      /* Not implemented */
+    } else if (webhookEvent.eventName.startsWith("license_")) {
+      // Save license keys; eventBody is a "License key"
+      /* Not implemented */
+    }
+
+    // Update the webhook event in the database.
+    await db
+      .update(webhookEvents)
+      .set({
+        processed: true,
+        processingError,
+      })
+      .where(eq(webhookEvents.id, webhookEvent.id));
+  }
+}
 
 /**
  * This action will check if a webhook exists on Lemon Squeezy. It will return
@@ -492,6 +626,7 @@ export async function changePlan(currentPlanId: string, newPlanId: string) {
 
   revalidatePath("/settings/subscriptions");
   revalidatePath("/settings/subscriptions/plans");
+
   return updatedSub;
 }
 
@@ -516,34 +651,3 @@ export const listUsage = safeAction.action(async ({ ctx, parsedInput }) => {
 
   return usage;
 });
-
-export const saveCredit = safeAction
-  .schema(inserCreditSchema)
-  .action(async ({ ctx, parsedInput }) => {
-    const savedCredit = await db
-      .insert(credits)
-      .values({ ...parsedInput, userId: ctx.userId, variantId: ctx.variantId })
-      .onConflictDoUpdate({
-        target: usages.userId,
-        set: parsedInput,
-      })
-      .returning();
-    return savedCredit[0];
-  });
-
-export const getCreditByVariantId = safeAction
-  .schema(
-    z.object({
-      variantId: z.string(),
-    })
-  )
-  .action(async ({ ctx, parsedInput: { variantId } }) => {
-    let credit = await db.query.credits.findFirst({
-      where: and(
-        eq(credits.userId, ctx.userId),
-        eq(credits.variantId, variantId)
-      ),
-    });
-
-    return credit;
-  });
