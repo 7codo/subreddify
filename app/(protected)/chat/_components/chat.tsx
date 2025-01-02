@@ -24,7 +24,7 @@ import { MultimodalInput } from "./multimodal-input";
 
 export type HandleSubmitType = {
   chatRequestOptions?: ChatRequestOptions;
-  appendMessage?: Omit<Message, "id">;
+  appendMessage?: string;
 };
 
 export function Chat({
@@ -49,6 +49,7 @@ export function Chat({
   const [savingResources, setSavingResources] = useState(false);
   const [progress, setProgress] = useState(0);
   const suggestAction = useChatStore((state) => state.suggestAction);
+  const setSuggestAction = useChatStore((state) => state.setSuggestAction);
   const { data: resources } = useSWR<{
     comments: SelectCommentType[];
     posts: SelectPostType[];
@@ -112,12 +113,8 @@ export function Chat({
   useEffect(() => {
     const handleSuggestedAction = async () => {
       if (!suggestAction) return;
-
-      const actionMessage: Omit<Message, "id"> = {
-        content: suggestAction,
-        role: "user",
-      };
-      await onSubmit({ appendMessage: actionMessage });
+      console.log("suggestAction", suggestAction);
+      await onSubmit({ appendMessage: suggestAction });
     };
 
     handleSuggestedAction();
@@ -148,18 +145,14 @@ export function Chat({
     console.log("resourcesList", resourcesList);
     if (resourcesList.posts.length > 0) {
       console.log("there is resources and submit");
-      if (appendMessage) {
-        append(appendMessage);
-      } else {
-        handleSubmit(undefined, chatRequestOptions);
-      }
+      handleSubmit(undefined, chatRequestOptions);
     } else {
       setSavingResources(true);
       setProgress(0);
       const result = await handleSubmitResources({
         messages,
         id,
-        input,
+        input: appendMessage ?? input,
         posts,
         comments,
       });
@@ -175,6 +168,7 @@ export function Chat({
             break;
         }
       }
+      appendMessage && setSuggestAction("");
       setSavingResources(false);
     }
   }

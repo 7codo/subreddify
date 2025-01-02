@@ -57,8 +57,10 @@ function PureSuggestedActions({ chatId }: SuggestedActionsProps) {
         >
           <Button
             variant="ghost"
+            type="button"
             onClick={() => {
               window.history.replaceState({}, "", `/chat/${chatId}`);
+
               setSuggestAction(suggestedAction.action);
             }}
             className="text-left border rounded-xl px-4 py-3.5 text-sm flex-1 gap-1 flex-col w-full h-auto justify-start items-start"
