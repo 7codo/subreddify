@@ -3,8 +3,8 @@ import { NewPlan, type NewSubscription } from "@/lib/db/schemas";
 import { cn } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentPlanName, getUsage } from "@/lib/actions";
 import { SubscriptionStatusType } from "@/lib/types/global";
-import { currentUser } from "@clerk/nextjs/server";
 import { isValidSubscription } from "../../_lib/utils";
 import { ChangePlan } from "../plans/change-plan-button";
 import { NoPlanInfoMessage } from "../plans/plan";
@@ -12,7 +12,6 @@ import { SubscriptionActions } from "./actions";
 import { SubscriptionDate } from "./date";
 import { SubscriptionPrice } from "./price";
 import { SubscriptionStatus } from "./status";
-import { getCurrentPlanName, getUsage } from "@/lib/actions";
 
 export async function Subscriptions() {
   const userSubscriptions = (await getUserSubscriptions())?.data ?? [];

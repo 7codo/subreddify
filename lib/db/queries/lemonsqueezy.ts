@@ -487,8 +487,8 @@ export async function cancelSub(id: string) {
     throw new Error(`Failed to cancel Subscription #${id} in the database.`);
   }
 
-  revalidatePath("/settings/subscriptions");
-  revalidatePath("/settings/subscriptions/plans");
+  revalidatePath("/");
+
   return cancelledSub;
 }
 
@@ -531,8 +531,8 @@ export async function pauseUserSubscription(id: string) {
     throw new Error(`Failed to pause Subscription #${id} in the database.`);
   }
 
-  revalidatePath("/settings/subscriptions");
-  revalidatePath("/settings/subscriptions/plans");
+  revalidatePath("/");
+
   return returnedSub;
 }
 
@@ -571,8 +571,8 @@ export async function unpauseUserSubscription(id: string) {
     throw new Error(`Failed to pause Subscription #${id} in the database.`);
   }
 
-  revalidatePath("/settings/subscriptions");
-  revalidatePath("/settings/subscriptions/plans");
+  revalidatePath("/");
+
   return returnedSub;
 }
 
@@ -624,8 +624,7 @@ export async function changePlan(currentPlanId: string, newPlanId: string) {
     );
   }
 
-  revalidatePath("/settings/subscriptions");
-  revalidatePath("/settings/subscriptions/plans");
+  revalidatePath("/");
 
   return updatedSub;
 }
