@@ -56,20 +56,18 @@ function PureChatHeader({
     <header className="flex items-center px-2 md:px-2 gap-2">
       {!isReadonly && (
         <ModelSelector
-          disabled={true}
           selectedModelId={selectedModelId}
           className="order-1 md:order-2"
-          currentPlanName={"free"}
+          currentPlanName={currentPlanName}
         />
       )}
 
       {!isReadonly && (
         <VisibilitySelector
           chatId={chatId}
-          disabled={true}
           size={isMobile ? "sm" : "default"}
           selectedVisibilityType={selectedVisibilityType}
-          currentPlanName={"free"}
+          currentPlanName={currentPlanName}
           className="order-1 md:order-3"
         />
       )}
