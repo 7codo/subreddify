@@ -61,14 +61,10 @@ export async function POST(request: Request) {
     id,
     messages,
     modelId,
-    posts,
-    comments,
   }: {
     id: string;
     messages: Array<Message>;
     modelId: string;
-    posts: InsertPostType[];
-    comments: InsertCommentType[];
   } = await request.json();
 
   const { userId } = await auth();
@@ -111,16 +107,8 @@ export async function POST(request: Request) {
     await saveChat({ id, title });
   }
 
-  if (posts.length > 0) {
-    await createResource({
-      postsData: posts,
-      commentsData: comments,
-      chatId: id,
-    });
-  } else {
-    if (postsList.length === 0) {
-      return new Response("Resource not found", { status: 404 });
-    }
+  if (postsList.length === 0) {
+    return new Response("Resource not found", { status: 404 });
   }
 
   const userMessageId = generateUUID();

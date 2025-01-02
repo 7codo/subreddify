@@ -32,6 +32,7 @@ import { BlockMessages } from "./block-messages";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useBlock } from "@/hooks/use-block";
 import equal from "fast-deep-equal";
+import { HandleSubmitType } from "./chat";
 
 export interface UIBlock {
   title: string;
@@ -83,12 +84,7 @@ function PureBlock({
     message: Message | CreateMessage,
     chatRequestOptions?: ChatRequestOptions
   ) => Promise<string | null | undefined>;
-  handleSubmit: (
-    event?: {
-      preventDefault?: () => void;
-    },
-    chatRequestOptions?: ChatRequestOptions
-  ) => void;
+  handleSubmit: (params: HandleSubmitType) => void;
   reload: (
     chatRequestOptions?: ChatRequestOptions
   ) => Promise<string | null | undefined>;

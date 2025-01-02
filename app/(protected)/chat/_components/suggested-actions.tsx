@@ -4,8 +4,18 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChatRequestOptions, CreateMessage, Message } from "ai";
 import { memo } from "react";
+import { useChatStore } from "@/lib/stores/chat-store";
 
-const suggestedActions = [
+interface SuggestedAction {
+  title: string;
+  label: string;
+  action: string;
+  [key: number]: string;
+}
+
+type SuggestedActions = SuggestedAction;
+
+export const suggestedActionsItems: SuggestedActions[] = [
   {
     title: "Identify Challenges",
     label: "Ask to uncover key pain points and areas of improvement.",
@@ -30,16 +40,13 @@ const suggestedActions = [
 
 interface SuggestedActionsProps {
   chatId: string;
-  append: (
-    message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions
-  ) => Promise<string | null | undefined>;
 }
 
-function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
+function PureSuggestedActions({ chatId }: SuggestedActionsProps) {
+  const setSuggestAction = useChatStore((state) => state.setSuggestAction);
   return (
     <div className="grid sm:grid-cols-2 grid-cols-1 gap-2 w-full">
-      {suggestedActions.map((suggestedAction, index) => (
+      {suggestedActionsItems.map((suggestedAction, index) => (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -50,13 +57,9 @@ function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
         >
           <Button
             variant="ghost"
-            onClick={async () => {
+            onClick={() => {
               window.history.replaceState({}, "", `/chat/${chatId}`);
-
-              append({
-                role: "user",
-                content: suggestedAction.action,
-              });
+              setSuggestAction(suggestedAction.action);
             }}
             className="text-left border rounded-xl px-4 py-3.5 text-sm flex-1 gap-1 flex-col w-full h-auto justify-start items-start"
           >

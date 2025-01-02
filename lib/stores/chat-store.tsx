@@ -8,6 +8,8 @@ interface ChatStore {
   setComments: (comments: InsertCommentType[]) => void;
   showSettingsPanel: boolean;
   setShowSettingsPanel: (showSettingsPanel: boolean) => void;
+  suggestAction: string;
+  setSuggestAction: (suggestAction: string) => void;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -17,4 +19,6 @@ export const useChatStore = create<ChatStore>((set) => ({
   setComments: (comments) => set({ comments }),
   showSettingsPanel: false,
   setShowSettingsPanel: (showSettingsPanel) => set({ showSettingsPanel }),
+  suggestAction: "",
+  setSuggestAction: (suggestAction) => set({ suggestAction }),
 }));

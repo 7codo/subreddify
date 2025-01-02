@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SuggestedActions } from "./suggested-actions";
 import equal from "fast-deep-equal";
+import { HandleSubmitType } from "./chat";
 
 function PureMultimodalInput({
   chatId,
@@ -57,12 +58,7 @@ function PureMultimodalInput({
     message: Message | CreateMessage,
     chatRequestOptions?: ChatRequestOptions
   ) => Promise<string | null | undefined>;
-  handleSubmit: (
-    event?: {
-      preventDefault?: () => void;
-    },
-    chatRequestOptions?: ChatRequestOptions
-  ) => void;
+  handleSubmit: (params: HandleSubmitType) => void;
   className?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -115,8 +111,10 @@ function PureMultimodalInput({
   const submitForm = useCallback(() => {
     window.history.replaceState({}, "", `/chat/${chatId}`);
 
-    handleSubmit(undefined, {
-      experimental_attachments: attachments,
+    handleSubmit({
+      chatRequestOptions: {
+        experimental_attachments: attachments,
+      },
     });
 
     setAttachments([]);
@@ -191,9 +189,7 @@ function PureMultimodalInput({
     <div className="relative w-full flex flex-col gap-4">
       {messages.length === 0 &&
         attachments.length === 0 &&
-        uploadQueue.length === 0 && (
-          <SuggestedActions append={append} chatId={chatId} />
-        )}
+        uploadQueue.length === 0 && <SuggestedActions chatId={chatId} />}
 
       <input
         type="file"

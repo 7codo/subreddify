@@ -249,9 +249,7 @@ export const ThinkingMessage = ({ length }: { length: number }) => {
 
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col gap-4 text-muted-foreground">
-            {length === 1
-              ? "Preparing resources... Initial setup may take time. Thank you for your patience!"
-              : "Thinking..."}
+            Thinking...
           </div>
         </div>
       </div>

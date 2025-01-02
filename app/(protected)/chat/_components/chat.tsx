@@ -1,24 +1,32 @@
 "use client";
 
-import type { Attachment, Message } from "ai";
+import { ChatRequestOptions, type Attachment, type Message } from "ai";
 import { useChat } from "ai/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
 import type { SelectCommentType, SelectPostType, Vote } from "@/lib/db/schemas";
 import { fetcher } from "@/lib/utils";
 
 import { useBlockSelector } from "@/hooks/use-block";
+import { handleSubmitResources } from "@/lib/actions";
+import { saveUsage } from "@/lib/db/queries";
 import { useChatStore } from "@/lib/stores/chat-store";
+import { handleError } from "@/lib/utils/error-handler";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useWindowSize } from "usehooks-ts";
 import { Block } from "./block";
 import { ChatSettingsPanel } from "./chat-settings-panel";
+import { LoadingDialog } from "./loading-dialog";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
-import { handleError } from "@/lib/utils/error-handler";
-import { saveUsage } from "@/lib/db/queries";
+
+export type HandleSubmitType = {
+  chatRequestOptions?: ChatRequestOptions;
+  appendMessage?: Omit<Message, "id">;
+};
+
 export function Chat({
   id,
   initialMessages,
@@ -38,6 +46,15 @@ export function Chat({
   const showSettingsPanel = useChatStore((state) => state.showSettingsPanel);
   const { width: windowWidth } = useWindowSize();
   const isMobile = windowWidth < 768;
+  const [savingResources, setSavingResources] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const suggestAction = useChatStore((state) => state.suggestAction);
+  const { data: resources } = useSWR<{
+    comments: SelectCommentType[];
+    posts: SelectPostType[];
+  }>(id ? `/api/resources?chatId=${id}` : null, fetcher, {
+    fallbackData: { comments: [], posts: [] },
+  });
 
   const setShowSettingsPanel = useChatStore(
     (state) => state.setShowSettingsPanel
@@ -92,8 +109,74 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const isBlockVisible = useBlockSelector((state) => state.isVisible);
 
-  function onSubmit() {
-    handleSubmit();
+  useEffect(() => {
+    const handleSuggestedAction = async () => {
+      if (!suggestAction) return;
+
+      const actionMessage: Omit<Message, "id"> = {
+        content: suggestAction,
+        role: "user",
+      };
+      await onSubmit({ appendMessage: actionMessage });
+    };
+
+    handleSuggestedAction();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestAction]);
+
+  useEffect(() => {
+    if (!savingResources) return;
+
+    const eventSource = new EventSource(`/api/progress?chatId=${id}`);
+
+    eventSource.addEventListener("progress", (event) => {
+      const data = JSON.parse(event.data);
+      setProgress(data.progress);
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, [savingResources, id]);
+
+  async function onSubmit({
+    appendMessage,
+    chatRequestOptions,
+  }: HandleSubmitType) {
+    console.log("messages.length", messages.length);
+    const resourcesList = resources ? resources : { comments: [], posts: [] };
+    console.log("resourcesList", resourcesList);
+    if (resourcesList.posts.length > 0) {
+      console.log("there is resources and submit");
+      if (appendMessage) {
+        append(appendMessage);
+      } else {
+        handleSubmit(undefined, chatRequestOptions);
+      }
+    } else {
+      setSavingResources(true);
+      setProgress(0);
+      const result = await handleSubmitResources({
+        messages,
+        id,
+        input,
+        posts,
+        comments,
+      });
+      setInput("");
+      setProgress(0);
+      if (result.status === "success" && result.data) {
+        append(result.data);
+      } else if (result.status === "error") {
+        switch (result.type) {
+          case "NO_POSTS_FOUND":
+            toast.error("Please add some resources to get started!");
+            setShowSettingsPanel(true);
+            break;
+        }
+      }
+      setSavingResources(false);
+    }
   }
 
   return (
@@ -148,7 +231,7 @@ export function Chat({
         chatId={id}
         input={input}
         setInput={setInput}
-        handleSubmit={handleSubmit}
+        handleSubmit={onSubmit}
         isLoading={isLoading}
         stop={stop}
         attachments={attachments}
@@ -160,6 +243,7 @@ export function Chat({
         votes={votes}
         isReadonly={isReadonly}
       />
+      <LoadingDialog open={savingResources} progress={progress} />
     </>
   );
 }
