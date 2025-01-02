@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-
+import { withLogtail } from "@logtail/next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -18,4 +18,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withLogtail(nextConfig);
