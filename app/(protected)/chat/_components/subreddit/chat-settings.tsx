@@ -10,17 +10,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { createResource, getChatById, saveChat } from "@/lib/db/queries";
-import { useState } from "react";
-import SubredditCard from "./subreddit-card";
+import { createResource } from "@/lib/db/queries";
+import { InsertCommentType, InsertPostType } from "@/lib/db/schemas";
 import { useChatStore } from "@/lib/stores/chat-store";
 import { handleError } from "@/lib/utils/error-handler";
-import { z } from "zod";
-import { InsertCommentType, InsertPostType } from "@/lib/db/schemas";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
+import SubredditCard from "./subreddit-card";
 
 export interface SubredditData {
   data: {
@@ -58,6 +55,7 @@ export function ChatSettings({
   const [open, setOpen] = useState(openDialog);
   const [searchResults, setSearchResults] = useState<SubredditData[]>([]);
   const [selectedSubreddits, setSelectedSubreddits] = useState<string[]>([]);
+  const [isCreatingResources, setIsCreatingResources] = useState(false);
   const [subredditSettings, setSubredditSettings] = useState<
     Record<
       string,
@@ -270,6 +268,10 @@ export function ChatSettings({
 
       if (hasResources) {
         if (!id) return;
+        toast.warning("Resource Processing in Progress", {
+          description:
+            "The process may take longer depending on the resources selected. Please be patient and avoid closing the dialog.",
+        });
         const [result, error] = await handleError(
           createResource({
             postsData: uniquePosts,
@@ -284,6 +286,7 @@ export function ChatSettings({
           toast.error("Creating resource failed!");
         }
         mutate("/api/resources");
+        setSelectedSubreddits([]);
         setPosts([]);
         setComments([]);
         setOpen(false);

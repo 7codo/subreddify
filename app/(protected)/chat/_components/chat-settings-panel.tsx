@@ -139,6 +139,7 @@ export function ChatSettingsPanel({ id }: Props) {
   if (!isMobile)
     return (
       <SettingsPanel
+        isLoading={isLoading}
         resources={resources ?? { comments: [], posts: [] }}
         id={id}
       />
@@ -150,6 +151,7 @@ export function ChatSettingsPanel({ id }: Props) {
           <SheetTitle className="sr-only">Add Resources</SheetTitle>
         </SheetHeader>
         <SettingsPanel
+          isLoading={isLoading}
           resources={resources ?? { comments: [], posts: [] }}
           id={id}
         />
@@ -164,16 +166,17 @@ type SettingsPanelProps = {
     posts: SelectPostType[];
   };
   id: string;
+  isLoading: boolean;
 };
 
-export function SettingsPanel({ resources, id }: SettingsPanelProps) {
+export function SettingsPanel({
+  resources,
+  id,
+  isLoading,
+}: SettingsPanelProps) {
   const pathname = usePathname();
   const { width: windowWidth } = useWindowSize();
   const isMobile = windowWidth < 768;
-  const { isLoading } = useSWR<{
-    comments: SelectCommentType[];
-    posts: SelectPostType[];
-  }>(id ? `/api/resources?chatId=${id}` : null, fetcher);
 
   const [commentsByPost, setCommentsByPost] = useState<Record<string, number>>(
     {}
