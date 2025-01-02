@@ -9,6 +9,7 @@ import {
   insertPostSchema,
   posts,
   SelectCommentType,
+  SelectPostType,
 } from "@/lib/db/schemas";
 import { safeAction } from "@/lib/utils/safe-action";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -32,81 +33,90 @@ export const createResource = safeAction
     }) => {
       try {
         // Insert posts first
-
-        const createdPosts = await db
-          .insert(posts)
-          .values(
-            postsData.map((post) => ({
-              userId,
-              ...post,
-            }))
-          )
-          .returning();
-
-        // Create a map of permalink to post ID
-        const permalinkToIdMap = new Map(
-          createdPosts.map((post) => [post.permalink, post.id])
-        );
-
-        // Map comments to their corresponding posts using the permalink and filter out undefined postIds
-
-        const mappedComments = commentsData
-          .map((comment) => ({
-            ...comment,
-            postId: permalinkToIdMap.get(comment.postPermalink), // comment.postId contains permalink at this point
-          }))
-          .filter(
-            (comment): comment is typeof comment & { postId: string } =>
-              comment.postId !== undefined
-          );
-
-        // Insert comments with correct postId
-        let createdComments: SelectCommentType[] = [];
-        if (mappedComments.length > 0) {
-          createdComments = await db
-            .insert(comments)
+        let createdPosts: SelectPostType[] = [];
+        if (postsData.length > 0) {
+          createdPosts = await db
+            .insert(posts)
             .values(
-              mappedComments.map((comment) => ({
+              postsData.map((post) => ({
                 userId,
-                ...comment,
+                ...post,
               }))
             )
             .returning();
-        }
 
-        // Process posts embeddings
-        if (createdPosts.length > 0) {
-          for (const post of createdPosts) {
+          // Batch generate embeddings for posts
+          const postEmbeddingsPromises = createdPosts.map(async (post) => {
             const text = post.selftext ? post.selftext : post.title;
             const embeddings = await generateEmbeddings(text);
+            return embeddings.map((embedding) => ({
+              postId: post.id,
+              chatId: post.chatId,
+              userId,
+              ...embedding,
+            }));
+          });
 
-            await db.insert(embeddingsTable).values(
-              embeddings.map((embedding) => ({
-                postId: post.id,
-                chatId: post.chatId,
-                userId,
-                ...embedding,
-              }))
-            );
+          const postEmbeddings = (
+            await Promise.all(postEmbeddingsPromises)
+          ).flat();
+          if (postEmbeddings.length > 0) {
+            await db.insert(embeddingsTable).values(postEmbeddings);
           }
         }
 
-        // Process comments embeddings
-        if (createdComments.length > 0) {
-          for (const comment of createdComments) {
-            const embeddings = await generateEmbeddings(comment.body);
+        // Process comments in a similar batched manner
+        let createdComments: SelectCommentType[] = [];
+        if (commentsData.length > 0) {
+          const permalinkToIdMap = new Map(
+            createdPosts.map((post) => [post.permalink, post.id])
+          );
 
-            await db.insert(embeddingsTable).values(
-              embeddings.map((embedding) => ({
-                postId: comment.postId,
-                commentId: comment.id,
-                userId,
-                chatId: comment.chatId,
-                ...embedding,
-              }))
+          const mappedComments = commentsData
+            .map((comment) => ({
+              ...comment,
+              postId: permalinkToIdMap.get(comment.postPermalink),
+            }))
+            .filter(
+              (comment): comment is typeof comment & { postId: string } =>
+                comment.postId !== undefined
             );
+
+          if (mappedComments.length > 0) {
+            createdComments = await db
+              .insert(comments)
+              .values(
+                mappedComments.map((comment) => ({
+                  userId,
+                  ...comment,
+                }))
+              )
+              .returning();
+
+            // Batch generate embeddings for comments
+            const commentEmbeddingsPromises = createdComments.map(
+              async (comment) => {
+                const embeddings = await generateEmbeddings(comment.body);
+                return embeddings.map((embedding) => ({
+                  postId: comment.postId,
+                  commentId: comment.id,
+                  userId,
+                  chatId: comment.chatId,
+                  ...embedding,
+                }));
+              }
+            );
+
+            const commentEmbeddings = (
+              await Promise.all(commentEmbeddingsPromises)
+            ).flat();
+            if (commentEmbeddings.length > 0) {
+              await db.insert(embeddingsTable).values(commentEmbeddings);
+            }
           }
         }
+
+        // Calculate table sizes once at the end
         const tablesSizes = (await calculateTableSizes())?.data ?? {
           totalSizeInBytes: 0,
         };

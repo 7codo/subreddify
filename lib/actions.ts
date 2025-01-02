@@ -63,6 +63,12 @@ type ResourceResponse = {
   type?: "NO_POSTS_FOUND" | "PERSIST" | "UNKNOWN";
 };
 
+const safeEmitProgress = (id: string, progress: number) => {
+  try {
+    emitProgress(id, progress);
+  } catch (error) {}
+};
+
 export async function handleSubmitResources({
   messages,
   id,
@@ -76,11 +82,11 @@ export async function handleSubmitResources({
   posts: InsertPostType[];
   comments: InsertCommentType[];
 }): Promise<ResourceResponse> {
-  emitProgress(id, 10);
+  safeEmitProgress(id, 10);
 
   if (messages.length === 0) {
     const chat = (await getChatById({ id }))?.data;
-    emitProgress(id, 20);
+    safeEmitProgress(id, 20);
 
     const firstMessage: Message = {
       id: nanoid(),
@@ -94,15 +100,15 @@ export async function handleSubmitResources({
       if (!userMessage) {
         throw new Error("No user message found!");
       }
-      emitProgress(id, 30);
+      safeEmitProgress(id, 30);
 
       const title = await generateTitleFromUserMessage({
         message: userMessage,
       });
-      emitProgress(id, 40);
+      safeEmitProgress(id, 40);
 
       await saveChat({ id, title });
-      emitProgress(id, 50);
+      safeEmitProgress(id, 50);
     }
 
     if (posts.length > 0) {
@@ -112,7 +118,7 @@ export async function handleSubmitResources({
         chatId: id,
       });
 
-      emitProgress(id, 100);
+      safeEmitProgress(id, 100);
       return {
         status: "success",
         data: firstMessage,
